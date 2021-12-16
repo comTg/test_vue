@@ -4,7 +4,12 @@ import Vuex from "vuex";
 Vue.use(Vuex);
 
 export default new Vuex.Store({
-  state: {},
+  state: {
+    followCounts: 0,
+    fansCounts: 0,
+    receiveLikeCounts: 0,
+    username: '',
+  },
   mutations: {},
   actions: {}
 });

@@ -38,6 +38,8 @@ export default {
                 this.$router.push("home");
             } else if (index === 2 && !sessionStorage.getItem("userId")) {
                 this.$router.push("login");
+            } else if (index === 2 && sessionStorage.getItem("userId")) {
+                this.$router.push("profile");
             }
         },
     }
@@ -53,6 +55,7 @@ export default {
         height: 48px;
         /*border-top: 1px solid rgba(255, 255, 255, 0.7);*/
         max-width: 550px;
+        z-index: 10;
     }
     .border_progress {
         width: 0;

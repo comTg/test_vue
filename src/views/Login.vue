@@ -26,10 +26,10 @@
                     :rules="[{ required: true, message: '请填写密码' }]"
             />
             <div style="margin: 16px;">
-                <van-button round block type="info" native-type="submit" @click="onSubmit">登录</van-button>
+                <van-button round block :disabled="btnDisable" type="info" native-type="submit" @click="onSubmit">登录</van-button>
             </div>
             <div class="reg">
-                <div @click="toRegister">没有账号？立即注册</div>
+                <div @click="toRegister">没有账号？<span style="color:rgb(62 112 255);">立即注册</span></div>
             </div>
         </van-form>
         <bottom :tabIndex="2"></bottom>
@@ -47,7 +47,11 @@
             return {
                 username: '',
                 password: '',
+                btnDisable: false,
             };
+        },
+        mounted () {
+            this.btnDisable = false;
         },
         components: {
             Bottom,
@@ -64,7 +68,18 @@
                     this.$api.post(URL.LOGINURL, params).then(res => {
                         tools.log('login res:', res);
                         if (res.status === 200) {
-                            Toast.success("登录成功");
+                            let data = res.data;
+                            let userId = data.id;
+                            let userToken = data.userToken;
+                            sessionStorage.setItem("userId", userId);
+                            sessionStorage.setItem("userToken", userToken);
+                            sessionStorage.setItem("username", data.username);
+                            this.$store.state.fansCounts = data.fansCounts;
+                            this.$store.state.followCounts = data.followCounts;
+                            this.$store.state.receiveLikeCounts = data.receiveLikeCounts;
+                            this.$store.state.username = data.username;
+                            Toast.success("登录成功 ");
+                            this.$router.push("profile");
                         } else {
                             Toast.fail(res.msg);
                         }

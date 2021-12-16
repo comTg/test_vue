@@ -1,9 +1,14 @@
 import axios from 'axios';
+import router from '../router';
 
 var instance = axios.create({timeout: 1000 * 12});
 
 instance.interceptors.request.use(config => {
     console.log('config:', config);
+    if (sessionStorage.getItem("userId")) {
+        config.headers.userId = sessionStorage.getItem("userId");
+        config.headers.userToken = sessionStorage.getItem("userToken");
+    }
     return config;
 }, error => {
     return Promise.error(error);
@@ -21,6 +26,23 @@ instance.interceptors.response.use(response => {
         console.log('response status:', error.response.status);
     }
     return Promise.reject(error.response);
+});
+
+router.beforeEach((to, from, next) => {
+    let requireAuth = to.meta.requireAuth;
+    const userId = sessionStorage.getItem('userId');
+    if (requireAuth) {
+        if (userId) {
+            next();
+        } else {
+            next({
+                path: '/login',
+                query: {redirect: to.fullPath}
+            });
+        }
+    } else {
+        next();
+    }
 });
 
 export default {

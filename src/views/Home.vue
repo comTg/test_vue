@@ -1,8 +1,6 @@
 <template>
     <div class="container_box" id="video_box">
-        <a href="">
-            <img src="../assets/go-left.png" class="back_i" alt="">
-        </a>
+        <div class="back_i"></div>
         <div class="van_swipe">
             <!--vant van-swipe 滑动组件 -->
             <van-swipe :show-indicators="false" @change="onChange" vertical :loop="false">
@@ -576,7 +574,10 @@
         top: 20px;
         left: 10px;
         width: 28px;
+        height: 28px;
         z-index: 10;
+        background: url('../assets/go-left.png') center center no-repeat;
+        background-size: 23px 21px;
     }
 
 
