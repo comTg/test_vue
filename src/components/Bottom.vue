@@ -33,7 +33,12 @@ export default {
     },
     methods: {
         changeTab (index) {
-            
+            console.log(index);
+            if (index === 0) {
+                this.$router.push("home");
+            } else if (index === 2 && !sessionStorage.getItem("userId")) {
+                this.$router.push("login");
+            }
         },
     }
 }

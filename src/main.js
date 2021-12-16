@@ -11,7 +11,7 @@ import './static/css/iconfont.css'
 Vue.use(Vant);
 
 Vue.config.productionTip = false;
-Vue.prototype.$axios = instance;
+Vue.prototype.$api = instance;
 
 new Vue({
   router,

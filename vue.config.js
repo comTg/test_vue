@@ -1,6 +1,6 @@
 const path = require('path')
 const resolve = dir => {return path.join(__dirname, dir)}
-let target = 'http://localhost:8090/';
+let target = 'http://localhost:443/';
 // let target = 'https://blog.csdn.net/superKM';
 if (process.env.NODE_ENV === 'production') {
     target = '';
@@ -72,9 +72,10 @@ module.exports = {
          */
         // 开发环境配置
         host: '0.0.0.0',
-        port: 8080,
+        port: 8081,
         https: false,
         hotOnly: false,
+        disableHostCheck: true,
         open: false, //配置自动启动浏览器
         // 设置代理
         proxy: {
@@ -83,7 +84,7 @@ module.exports = {
                 //你要跨域的域名(包含host、端口号,切记：一定要带上http头);
                 //同一个域名只能设置一次跨域，否则重复报错！
                 target: target,
-                ws: true,
+                ws: false,
                 changOrigin: true, //是否跨域，设置为true;(必须)
                 /**(可选设置----如果访问域名根目录，那这里必须设置重定向了)
                  * 是否要把'/api'目录重定向去哪里，跟目录还是其他（可选）

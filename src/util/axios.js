@@ -10,6 +10,7 @@ instance.interceptors.request.use(config => {
 });
 
 instance.interceptors.response.use(response => {
+    console.log('response:', response);
     if (response.status === 200) {
         return Promise.resolve(response);
     } else {
@@ -36,7 +37,7 @@ export default {
     },
     post: function (url, params) {
         return new Promise((resolve, reject) => {
-            instance.post(url, QS.stringify(params))
+            instance.post(url, params)
            .then(res => {
                resolve(res.data);
            })
