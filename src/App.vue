@@ -12,6 +12,7 @@
   text-align: center;
   color: #2c3e50;
 }
+*::-webkit-scrollbar { width: 0 !important }
 #nav {
   padding: 30px;
 }

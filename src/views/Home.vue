@@ -17,12 +17,12 @@
                     -->
                         <video class="video_box" loop webkit-playsinline="true" x5-video-player-type="h5-page"
                                x5-video-player-fullscreen="true" playsinline preload="auto"
-                               :poster="item.cover" :src="item.url" :playOrPause="playOrPause"
+                               :poster="item.coverPath" :src="item.videoPath" :playOrPause="playOrPause"
                                @click="pauseVideo" @ended="onPlayerEnded($event)"
                         >
                         </video>
                         <!-- 封面 -->
-                        <img v-show="isVideoShow" class="play" @click="playvideo" :src="item.cover"/>
+                        <img v-show="isVideoShow" class="play" @click="playvideo" :src="item.coverPath"/>
                         <!-- 播放暂停按钮 -->
                         <img v-show="iconPlayShow" class="icon_play" @click="playvideo"
                              src="../assets/icon_play.png"/>
@@ -39,30 +39,30 @@
                         <div class="tools_r_li" @click="changeFabulous(item,index)">
                             <i class="iconfont icon-shoucang icon_right"
                                :class="item.fabulous?'fabulous_active':''"></i>
-                            <div class="tools_r_num">52.1w</div>
+                            <div class="tools_r_num">{{ item.likeCounts }}</div>
                         </div>
                         <div class="tools_r_li" @click="changeComment">
                             <i class="iconfont icon-liuyan icon_right icon_right_change"></i>
-                            <div class="tools_r_num">12.5w</div>
+                            <div class="tools_r_num"></div>
                         </div>
                         <div class="tools_r_li" @click="changeShare">
                             <i class="iconfont icon-iconfontforward icon_right"></i>
-                            <div class="tools_r_num">22.2w</div>
+                            <div class="tools_r_num"></div>
                         </div>
                     </div>
                     <!-- 底部作品描述 -->
                     <div class="production_box">
                         <div class="production_name">
-                            @{{item.author}}
+                            @{{item.nickname}}
                         </div>
                         <div class="production_des">
-                            {{item.des}}
+                            {{item.videoDesc}}
                         </div>
                     </div>
                 </van-swipe-item>
             </van-swipe>
             <!--底部操作栏-->
-            <bottom :tabIndex="tabIndex" :videoProcess="videoProcess"></bottom>
+            <bottom :tabIndex="tabIndex" :videoProcess="videoProcess" @updateVideo="updateVideo"></bottom>
             <!--分享弹框-->
             <div class="share_box" :class="showShareBox?'share_active':''">
                 <div class="share_tips">分享到</div>
@@ -171,6 +171,8 @@
     } from 'vant';
     // 引入微信分享
     import wx from "weixin-js-sdk";
+    import URL from '@/util/URL';
+    import lodash from 'lodash';
 
     Vue.use(Swipe, Toast).use(SwipeItem);
     import Bottom from '@/components/Bottom';
@@ -184,44 +186,10 @@
         data() {
             let u = navigator.userAgent;
             return {
+                baseUrl: 'http://localhost:443',
                 current: 0,
-                videoList: [{
-                    url: 'http://video.jishiyoo.com/3720932b9b474f51a4cf79f245325118/913d4790b8f046bfa1c9a966cd75099f-8ef4af9b34003bd0bc0261cda372521f-ld.mp4',//视频源
-                    cover: 'http://oss.jishiyoo.com/images/file-1575341210559.png',//封面
-                    tag_image: 'http://npjy.oss-cn-beijing.aliyuncs.com/images/file-1575449277018pF3XL.jpg',//作者头像
-                    fabulous: false,//是否赞过
-                    tagFollow: false,//是否关注过该作者
-                    author_id: 1,//作者ID
-                    author:'superKM',
-                    des:'武汉加油'
-                }, {
-                    url: 'http://video.jishiyoo.com/1eedc49bba7b4eaebe000e3721149807/d5ab221b92c74af8976bd3c1473bfbe2-4518fe288016ee98c8783733da0e2da4-ld.mp4',
-                    cover: 'http://oss.jishiyoo.com/images/file-1575343195934.jpg',
-                    tag_image: 'http://npjy.oss-cn-beijing.aliyuncs.com/images/file-1575449298299M3V50.jpg',
-                    fabulous: true,//是否赞过
-                    tagFollow: false,//是否关注过该作者
-                    author_id: 2,//作者ID
-                    author:'superKM',
-                    des:'中国加油'
-                }, {
-                    url: 'http://video.jishiyoo.com/161b9562c780479c95bbdec1a9fbebcc/8d63913b46634b069e13188b03073c09-d25c062412ee3c4a0758b1c48fc8c642-ld.mp4',
-                    cover: 'http://oss.jishiyoo.com/images/file-1575343262684.jpg',
-                    tag_image: 'http://npjy.oss-cn-beijing.aliyuncs.com/images/file-1575449277018pF3XL.jpg',
-                    fabulous: false,//是否赞过
-                    tagFollow: false,//是否关注过该作者
-                    author_id: 1,//作者ID
-                    author:'superKM',
-                    des:'武汉加油'
-                }, {
-                    url: 'http://video.jishiyoo.com/549ed372c9d14b029bfb0512ba879055/8e2dc540573d496cb0942273c4a4c78c-15844fe70971f715c01d57c0c6595f45-ld.mp4',
-                    cover: 'http://oss.jishiyoo.com/images/file-1575343508574.jpg',
-                    tag_image: 'http://npjy.oss-cn-beijing.aliyuncs.com/images/file-1575449277018pF3XL.jpg',
-                    fabulous: false,//是否赞过
-                    tagFollow: false,//是否关注过该作者
-                    author_id: 1,//作者ID
-                    author:'superKM',
-                    des:'中国加油'
-                }],
+                currentIndex: 0,
+                videoList: [],
                 isVideoShow: true,
                 playOrPause: true,
                 video: null,
@@ -239,6 +207,8 @@
                 replayUserData: '',
                 to_comment_id: '',
                 videoProcess: 0,//视频播放进度
+                videoPage: 1,
+                pageSize: 5,
             }
         },
         watch: {
@@ -246,6 +216,9 @@
             comment_text(newV, oldV) {
                 newV == '' ? this.canSend = false : this.canSend = true
             }
+        },
+        created () {
+            this.getVideos(this.videoPage);
         },
         mounted() {
             wx.config({
@@ -258,6 +231,41 @@
             })
         },
         methods: {
+            getVideos (page) {
+                let params = {
+                };
+                this.$api.post(URL.SHOWALLURL + '?page=' + page, {}).then(res => {
+                    console.log('res:', res);
+                    if (res.status === 200) {
+                        if (res.data && res.data.rows) {
+                            let oldData = lodash.cloneDeep(this.videoList);
+                            res.data.rows.forEach(item => {
+                                item.coverPath = this.baseUrl + item.coverPath;
+                                item.videoPath = this.baseUrl + item.videoPath;
+                                let flag = oldData.some(item2 => {
+                                    if (item2.id === item.id) {
+                                        item2 = Object.assign(item2, item);
+                                        return true;
+                                    } else {
+                                        return false;
+                                    }
+                                });
+                                if (flag === false) {
+                                    oldData.push(item);
+                                }
+                                // this.videoList.push(item);
+                            });
+                            this.videoList = oldData;
+                        }
+                    }
+                }).catch(error => {
+                    Toast.fail(error.message);
+                });
+            },
+            updateVideo () {
+                let page = Math.floor(this.currentIndex / 5) + 1;
+                this.getVideos(page);
+            },
             //获取评论
             getComment() {
                 //setTimeout模拟Ajax请求
@@ -468,6 +476,8 @@
             },
             //滑动改变播放的视频
             onChange(index) {
+                console.log('on change index:', index);
+                this.currentIndex = index;
                 //改变的时候 暂停当前播放的视频
                 clearInterval(videoProcessInterval)
                 this.videoProcess = 0;
@@ -487,8 +497,10 @@
                     this.playOrPause = true;
                     this.iconPlayShow = true;
                 }
-
-
+                if (Math.floor(((index + 1) / 5)) === (this.videoPage - 1)) {
+                    this.videoPage++;
+                    this.getVideos(this.videoPage);
+                }
             },
             // 开始播放
             playvideo(event) {
@@ -611,13 +623,15 @@
     }
 
     .video_box {
-        object-fit: fill !important;
+        /* object-fit: fill !important; */
+        /* object-fit: contain; */
         z-index: 999;
         width: 100%;
-        height: 100%;
+        /* height: 100%; */
         position: absolute;
         left: 0;
-        top: 0;
+        top: 50%;
+        transform: translateY(-50%);
         overflow: hidden;
     }
 
@@ -642,11 +656,13 @@
     .platStart {
         position: absolute;
         margin: auto;
-        top: 0;
+        top: 50%;
+        transform: translateY(-50%);
         left: 0;
         z-index: 999;
         width: 100%;
-        height: 100%;
+
+        /* height: 100%; */
     }
 
     /*头像， 点赞，转发 */
@@ -1150,6 +1166,9 @@
 
     .love_active {
         color: #f44;
+    }
+    .tools_r_num {
+        text-shadow: 1px 1px 2px #262424;
     }
 
     /*评论样式*/

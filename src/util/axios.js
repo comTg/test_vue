@@ -67,5 +67,18 @@ export default {
                reject(err.data)
            })
        });
-    }
+    },
+    uploadFile: function (url, data) {
+        return new Promise((resolve, reject) => {
+            instance.post(url, data, {
+                headers: {
+                    "Content-Type":"multipart/form-data"
+                }
+            }).then(res => {
+                resolve(res.data);
+            }).catch(err => {
+                reject(err.data);
+            });
+        });
+    },
 }

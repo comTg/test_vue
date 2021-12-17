@@ -31,7 +31,13 @@
           </div>
             <van-tabs v-model="activeName">
                 <van-tab title="作品" name="a">
-                    内容1
+                    <div class="img-container">
+                        <van-image
+                         v-for="(item,index) in videoList" :key="index"
+                         :src="item.coverPath"
+                         height="10rem"
+                         width="6rem"></van-image>
+                    </div>
                 </van-tab>
                 <van-tab title="喜欢" name="b">
                     内容2
@@ -45,19 +51,59 @@
 
 <script>
 import Bottom from '@/components/Bottom';
+import URL from '@/util/URL';
+import { Toast } from 'vant';
+import lodash from 'lodash';
 export default {
     name: 'profile',
     data () {
         return {
             activeName: 'a',
+            videoList: [],
+            baseUrl: 'http://localhost:443',
         };
     },
     components: {
         Bottom,
     },
+    created () {
+        this.getMyVideo(1);
+    },
     methods: {
         goHome () {
             this.$router.push("home");
+        },
+        getMyVideo (page) {
+            let params = {
+                userId: this.$store.state.userId,
+            };
+            this.$api.post(URL.SHOWALLURL + '?page=' + page, params).then(res => {
+                console.log('res:', res);
+                if (res.status === 200) {
+                    if (res.data && res.data.rows) {
+                        let oldData = lodash.cloneDeep(this.videoList);
+                        res.data.rows.forEach(item => {
+                            item.coverPath = this.baseUrl + item.coverPath;
+                            item.videoPath = this.baseUrl + item.videoPath;
+                            let flag = oldData.some(item2 => {
+                                if (item2.id === item.id) {
+                                    item2 = Object.assign(item2, item);
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            });
+                            if (flag === false) {
+                                oldData.push(item);
+                            }
+                            // this.videoList.push(item);
+                        });
+                        this.videoList = oldData;
+                    }
+                }
+            }).catch(error => {
+                Toast.fail(error.message);
+            });
         },
     }
 }
@@ -69,6 +115,7 @@ export default {
         height: 100vh;
         position: relative;
     }
+    .container::-webkit-scrollbar { width: 0 !important }
     .back-img {
         background: url('../assets/b.png') center center no-repeat;
         width: 100%;
@@ -126,5 +173,10 @@ export default {
     }
     .data-num {
         font-weight: 700;
+    }
+    .img-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
     }
 </style>
