@@ -9,6 +9,7 @@
                 class="avastar-img"
                 width="6rem"
                 height="6rem"
+                @click="showPanel"
                 :src="require('../assets/cat.jpeg')"
                 round>
                 </van-image>
@@ -45,6 +46,10 @@
             </van-tabs>
       </div>
 
+      <van-action-sheet v-model="panelShow" :actions="actions" @select="onSelect" cancel-text="取消">
+
+      </van-action-sheet>
+
       <bottom :tabIndex="2"></bottom>
   </div>
 </template>
@@ -61,6 +66,8 @@ export default {
             activeName: 'a',
             videoList: [],
             baseUrl: 'http://localhost:443',
+            actions: [{ name: '上传头像' }, { name: '退出登录' }],
+            panelShow: false,
         };
     },
     components: {
@@ -72,6 +79,9 @@ export default {
     methods: {
         goHome () {
             this.$router.push("home");
+        },
+        showPanel () {
+            this.panelShow = true;
         },
         getMyVideo (page) {
             let params = {
@@ -104,6 +114,27 @@ export default {
             }).catch(error => {
                 Toast.fail(error.message);
             });
+        },
+        logOut () {
+            sessionStorage.setItem('userId', '');
+            sessionStorage.setItem("userToken", '');
+            sessionStorage.setItem("username", '');
+            this.$store.state.fansCounts = 0;
+            this.$store.state.followCounts = 0;
+            this.$store.state.receiveLikeCounts = 0;
+            this.$store.state.username = '';
+            this.$router.push('home');
+        },
+        onSelect (item) {
+            console.log('on select item:', item);
+            if (item.name === '退出登录') {
+                this.logOut();
+            } else if (item.name === '上传头像') {
+
+            }
+        },
+        onCancel () {
+            console.log('on cancel');
         },
     }
 }
