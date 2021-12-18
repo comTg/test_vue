@@ -9,6 +9,8 @@ export default new Vuex.Store({
     fansCounts: 0,
     receiveLikeCounts: 0,
     username: '',
+    userId: '',
+    faceImage: '',
   },
   mutations: {},
   actions: {}

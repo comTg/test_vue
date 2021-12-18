@@ -59,6 +59,7 @@ export default {
     },
     post: function (url, params) {
         return new Promise((resolve, reject) => {
+            console.log('axios post:', params);
             instance.post(url, params)
            .then(res => {
                resolve(res.data);

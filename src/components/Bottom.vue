@@ -8,6 +8,7 @@
         <div class="bottom_tab" :class="tabIndex==1?'tab_active':''" @click="changeTab(1)">
             <van-uploader v-model="uploadFile" :after-read="afterRead"
                 accept="video/*"
+                @click-upload="clickUpload"
                 :preview-image="false" :max-count="1">
                 <img src="../assets/add.png" alt="" class="bottom_tab_icon">
             </van-uploader>
@@ -74,6 +75,16 @@ export default {
             console.log('after read:', file);
             this.videoUrl = file.content;
             this.showPanel = true;
+        },
+        clickUpload (event) {
+            console.log('click upload:', event);
+            if (!sessionStorage.getItem('userToken')) {
+                event.preventDefault();
+                this.$router.push('login');
+                return false;
+            } else {
+                return true;
+            }
         },
         afterPanelClose () {
             this.videoUrl = '';

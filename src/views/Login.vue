@@ -48,6 +48,7 @@
                 username: '',
                 password: '',
                 btnDisable: false,
+                baseUrl: 'http://localhost:443',
             };
         },
         mounted () {
@@ -78,6 +79,8 @@
                             this.$store.state.followCounts = data.followCounts;
                             this.$store.state.receiveLikeCounts = data.receiveLikeCounts;
                             this.$store.state.username = data.username;
+                            this.$store.state.userId = data.id;
+                            this.$store.state.faceImage = this.baseUrl + data.faceImage;
                             Toast.success("登录成功 ");
                             this.$router.push("profile");
                         } else {

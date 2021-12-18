@@ -1,5 +1,6 @@
 <template>
     <div class="container_box" id="video_box">
+        <div class="empty-list" v-if="videoList.length === 0">暂无视频</div>
         <div class="back_i"></div>
         <div class="van_swipe">
             <!--vant van-swipe 滑动组件 -->
@@ -1172,4 +1173,10 @@
     }
 
     /*评论样式*/
+    .empty-list {
+        width: 100vw;
+        height: 100vh;
+        line-height: 100vh;
+        font-size: 24px;
+    }
 </style>

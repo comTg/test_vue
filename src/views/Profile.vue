@@ -10,7 +10,7 @@
                 width="6rem"
                 height="6rem"
                 @click="showPanel"
-                :src="require('../assets/cat.jpeg')"
+                :src="$store.state.faceImage"
                 round>
                 </van-image>
                 <div class="user-name">{{ $store.state.username }}</div>
@@ -46,9 +46,21 @@
             </van-tabs>
       </div>
 
-      <van-action-sheet v-model="panelShow" :actions="actions" @select="onSelect" cancel-text="取消">
-
+      <van-action-sheet v-model="panelShow" cancel-text="取消">
+          <van-uploader
+            ref="uploadImgRef" :preview-image="false"
+            accept="image/*" :after-read="afterReadImg">
+            <div class="sheet-item">上传头像</div>
+          </van-uploader>
+          <div class="sheet-item" @click="logOut">退出登录</div>
       </van-action-sheet>
+
+      <!-- <van-action-sheet v-model="panelShow" :actions="actions" @select="onSelect" cancel-text="取消">
+      </van-action-sheet>
+      <van-uploader
+        ref="uploadImgRef"
+        :show-upload="false" accept="image/*" :after-read="afterReadImg">
+      </van-uploader> -->
 
       <bottom :tabIndex="2"></bottom>
   </div>
@@ -57,7 +69,7 @@
 <script>
 import Bottom from '@/components/Bottom';
 import URL from '@/util/URL';
-import { Toast } from 'vant';
+import { Toast, Dialog } from 'vant';
 import lodash from 'lodash';
 export default {
     name: 'profile',
@@ -82,6 +94,19 @@ export default {
         },
         showPanel () {
             this.panelShow = true;
+        },
+        updateUserInfo () {
+            let params = {
+                userId: this.$store.state.userId,
+            };
+            this.$api.post(URL.QUERYUSER + '?userId=' + this.$store.state.userId).then(res => {
+                console.log('update user info:', res);
+                if (res.status === 200) {
+
+                }
+            }).catch(err => {
+                console.log('update user info error:', err);
+            });
         },
         getMyVideo (page) {
             let params = {
@@ -123,6 +148,8 @@ export default {
             this.$store.state.followCounts = 0;
             this.$store.state.receiveLikeCounts = 0;
             this.$store.state.username = '';
+            this.$store.state.userId = '';
+            this.$store.state.faceImage = '';
             this.$router.push('home');
         },
         onSelect (item) {
@@ -130,12 +157,37 @@ export default {
             if (item.name === '退出登录') {
                 this.logOut();
             } else if (item.name === '上传头像') {
-
+                this.$refs.uploadImgRef.chooseFile();
             }
         },
         onCancel () {
             console.log('on cancel');
         },
+        afterReadImg (file) {
+            console.log('after read img:', file);
+            Dialog.confirm({
+                title: '提示',
+                message: '是否确认使用此图像?'
+            }).then(() => {
+                let form = new FormData();
+                form.append('userId', this.$store.state.userId);
+                form.append('file', file.file);
+                this.$api.uploadFile(URL.UPLOADFACE, form).then(res => {
+                    if (res.status === 200) {
+                        Toast.success('上传成功');
+                        this.$store.state.faceImage = this.baseUrl + res.data;
+                        // this.updateUserInfo();
+                    } else {
+                        Toast.fail(res.msg);
+                    }
+                }).then(err => {
+                    Toast.fail(err.msg);
+                });
+                this.panelShow = false;
+            }).catch(() => {
+                this.panelShow = false;
+            });
+        }
     }
 }
 </script>
@@ -209,5 +261,9 @@ export default {
         display: flex;
         flex-wrap: wrap;
         justify-content: space-around;
+    }
+    .sheet-item {
+        height: 51px;
+        line-height: 51px;
     }
 </style>
