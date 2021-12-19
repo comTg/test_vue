@@ -4,7 +4,6 @@ import router from '../router';
 var instance = axios.create({timeout: 1000 * 12});
 
 instance.interceptors.request.use(config => {
-    console.log('config:', config);
     if (sessionStorage.getItem("userId")) {
         config.headers.userId = sessionStorage.getItem("userId");
         config.headers.userToken = sessionStorage.getItem("userToken");
@@ -15,7 +14,6 @@ instance.interceptors.request.use(config => {
 });
 
 instance.interceptors.response.use(response => {
-    console.log('response:', response);
     if (response.status === 200) {
         return Promise.resolve(response);
     } else {

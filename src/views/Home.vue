@@ -31,15 +31,17 @@
                     <!-- 右侧头像、点赞、评论、分享功能 -->
                     <div class="tools_right">
                         <div class="tools_r_li">
-                            <img :src="item.tag_image" class="tag_image">
-                            <i class="iconfont icon-jiahao tag_add" v-show="!item.tagFollow"
+                            <img :src="item.faceImage" class="tag_image">
+                            <div v-show="$store.state.userId && $store.state.userId !== item.userId && !tagFollow">
+                            <i class="iconfont icon-jiahao tag_add" v-show="$store.state.userId && !tagFollow"
                                @click="checkSubscribe(item,index)"></i>
-                            <i class="iconfont icon-duihao tag_dui" v-show="item.tagFollow"
-                               :class="item.tagFollow?'tag_dui_active':''"></i>
+                            <i class="iconfont icon-duihao tag_dui" v-show="$store.state.userId && tagFollow"
+                               :class="tagFollow?'tag_dui_active':''"></i>
+                            </div>
                         </div>
                         <div class="tools_r_li" @click="changeFabulous(item,index)">
                             <i class="iconfont icon-shoucang icon_right"
-                               :class="item.fabulous?'fabulous_active':''"></i>
+                               :class="likeVideo?'fabulous_active':''"></i>
                             <div class="tools_r_num">{{ item.likeCounts }}</div>
                         </div>
                         <div class="tools_r_li" @click="changeComment">
@@ -85,7 +87,7 @@
             <van-popup v-model="commentPop" closeable :overlay="true" class="comment_container" position="bottom">
                 <div class="comment_box">
                     <div class="comment_top">
-                        12.5w条评论
+                        {{ videoComment.length }}条评论
                         <i class="iconfont icon-guanbi1 guanbi3" @click="closeComment"></i>
                     </div>
                     <ul class="comment_ul">
@@ -94,21 +96,21 @@
                                 <li class="comment_li" v-for="(item,index) in videoComment" :key="`key-${index}`"
                                     @click="replayUser(item,index,-1)">
                                     <div class="comment_author_left">
-                                        <img :src="item.avatar">
+                                        <img :src="item.faceImage">
                                     </div>
                                     <div class="comment_author_right">
                                         <div class="comment_author_top">
                                             <div class="comment_author_name">@{{item.nickname}}</div>
-                                            <div class="icon-shoucang1_box" @click.stop="commentLove(item,index,-1)">
+                                            <!-- <div class="icon-shoucang1_box" @click.stop="commentLove(item,index,-1)">
                                                 <div class="icon_right_change"
                                                      :class="item.love_comment?'love_active':''">
                                                     <i class="iconfont icon-shoucang icon-shoucang1"></i>
                                                 </div>
                                                 <div class="shoucang1_num">{{item.love_count}}</div>
-                                            </div>
+                                            </div> -->
                                         </div>
                                         <div class="comment_author_text">
-                                            {{item.comment_content}}<span>{{item.create_time}}</span></div>
+                                            {{item.comment}}<span>{{item.timeAgoStr}}</span></div>
                                     </div>
                                     <div class="clear"></div>
                                     <div class="comment_replay_box">
@@ -121,14 +123,14 @@
                                                 <div class="comment_replay_right">
                                                     <div class="comment_replay_top">
                                                         <div class="comment_replay_name">@{{item2.nickname}}</div>
-                                                        <div class="icon-shoucang1_box"
+                                                        <!-- <div class="icon-shoucang1_box"
                                                              @click.stop="commentLove(item2,index,index2)">
                                                             <div class="icon_right_change"
                                                                  :class="item2.love_comment?'love_active':''">
                                                                 <i class="iconfont icon-shoucang icon-shoucang1"></i>
                                                             </div>
                                                             <div class="shoucang1_num">{{item2.love_count}}</div>
-                                                        </div>
+                                                        </div> -->
                                                     </div>
                                                     <div class="comment_replay_text">
                                                         <span v-if="item.user_id!=item2.be_commented_user_id && item.user_id!=item2.user_id">回复 {{item2.be_commented_nickname}}：</span>
@@ -173,6 +175,7 @@
     // 引入微信分享
     import wx from "weixin-js-sdk";
     import URL from '@/util/URL';
+    import tools from '@/util/tools';
     import lodash from 'lodash';
 
     Vue.use(Swipe, Toast).use(SwipeItem);
@@ -192,6 +195,7 @@
                 currentIndex: 0,
                 videoList: [],
                 isVideoShow: true,
+                likeVideo: false,
                 playOrPause: true,
                 video: null,
                 iconPlayShow: true,
@@ -210,6 +214,7 @@
                 videoProcess: 0,//视频播放进度
                 videoPage: 1,
                 pageSize: 5,
+                tagFollow: false,
             }
         },
         watch: {
@@ -243,6 +248,7 @@
                             res.data.rows.forEach(item => {
                                 item.coverPath = this.baseUrl + item.coverPath;
                                 item.videoPath = this.baseUrl + item.videoPath;
+                                item.faceImage = this.baseUrl + item.faceImage;
                                 let flag = oldData.some(item2 => {
                                     if (item2.id === item.id) {
                                         item2 = Object.assign(item2, item);
@@ -257,6 +263,7 @@
                                 // this.videoList.push(item);
                             });
                             this.videoList = oldData;
+                            this.queryPublish();
                         }
                     }
                 }).catch(error => {
@@ -264,62 +271,65 @@
                 });
             },
             updateVideo () {
-                let page = Math.floor(this.currentIndex / 5) + 1;
+                let page = Math.floor(this.currentIndex / 1000) + 1;
                 this.getVideos(page);
+            },
+            queryPublish () {
+                let params = {
+                    loginUserId: this.$store.state.userId,
+                    videoId: this.videoList[this.current].id,
+                    publisherUserId: this.videoList[this.current].userId,
+                };
+                this.likeVideo = false;
+                let url = tools.getParams(URL.QUERYPUBLISH, params);
+                this.$api.post(url, {}).then(res => {
+                    console.log('query publish:', res);
+                    if (res.status === 200) {
+                        this.likeVideo = res.data.userLikeVideo;
+                    } else {
+                        Toast.fail(res.msg);
+                    }
+                }).catch(err => {
+                    Toast.fail(err.msg);
+                });
             },
             //获取评论
             getComment() {
                 //setTimeout模拟Ajax请求
-                setTimeout(() => {
-                    let data = [{
-                        "comment_id": 297,
-                        "p_id": 0,
-                        "comment_content": "你好，我叫蓝湛",
-                        "love_count": 0,
-                        "create_time": "1月前",
-                        "user_id": 78634,
-                        "nickname": "蓝忘机\uD83C\uDF1F",
-                        "avatar": "http://npjy.oss-cn-beijing.aliyuncs.com/images/file-1575449277018pF3XL.jpg",
-                        "be_commented_user_id": 0,
-                        "be_commented_nickname": "",
-                        "be_commented_avatar": "",
-                        "child_comment": [{
-                            "comment_id": 298,
-                            "p_id": 296,
-                            "comment_content": "蓝二公子，今天天气不错",
-                            "love_count": 1,
-                            "create_time": "7天前",
-                            "user_id": 55163,
-                            "nickname": "魏婴",
-                            "avatar": "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTKPJb1k8zia02PjVibdaDJ83JIDGm0hIsY34kAlXyZMT6FMBibdw6rhdPPjpxtp6d8B75x5Kpicxp2gqw/132",
-                            "be_commented_user_id": 78480,
-                            "be_commented_nickname": "chenchen",
-                            "be_commented_avatar": "http://thirdwx.qlogo.cn/mmopen/vi_32/icxHc0Ym1p4hQAFAUnjpxDPMkEUyojnibBj9wUSS2OmibiazdBAicSLpoicricVYP6QG6XicjTzQPx9koMPqcGfhTOy5qA/132",
-                            "love_comment": true
-                        },],
-                        "love_comment": false
-                    }, {
-                        "comment_id": 281,
-                        "p_id": 0,
-                        "comment_content": "楼主好帅，我要嫁给你！！",
-                        "love_count": 0,
-                        "create_time": "1月前",
-                        "user_id": 74164,
-                        "nickname": "冰雪奇缘2",
-                        "avatar": "http://npjy.oss-cn-beijing.aliyuncs.com/images/file-1575449298299M3V50.jpg",
-                        "be_commented_user_id": 0,
-                        "be_commented_nickname": "",
-                        "be_commented_avatar": "",
-                        "child_comment": [],
-                        "love_comment": false
-                    }];//获取评论数据
-                    this.videoComment = [...this.videoComment, ...data];
-                    let to_comment_id = this.to_comment_id;
-                    if (to_comment_id != 0) {
-                        //从评论列表进来回复
-                        this.getCommentDetail(to_comment_id);
+                let videoId = this.videoList[this.current].id;
+                let params = {
+                    videoId: this.videoList[this.current].id
+                };
+                this.$api.post(URL.GETCOMMENTS + '?videoId=' + videoId).then(res => {
+                    console.log('get comments:', res);
+                    if (res.status === 200) {
+                        if (res.data && res.data.rows) {
+                            let oldData = lodash.cloneDeep(this.videoComment);
+                            let pushFlag = oldData.length === 0;
+                            res.data.rows.forEach(item => {
+                                item.faceImage = this.baseUrl + item.faceImage;
+                                let flag = oldData.some(item2 => {
+                                    if (item2.id === item.id) {
+                                        item2 = Object.assign(item2, item);
+                                        return true;
+                                    } else {
+                                        return false;
+                                    }
+                                });
+                                if (flag === false && !pushFlag) {
+                                    oldData.unshift(item);
+                                } else {
+                                    oldData.push(item);
+                                }
+                            });
+                            this.videoComment = oldData;
+                        }
+                    } else {
+                        Toast.fail(err.msg);
                     }
-                }, 500)
+                }).catch(err => {
+                    Toast.fail(err.msg);
+                });
             },
             //获取单个评论
             getCommentDetail(to_comment_id) {
@@ -355,54 +365,41 @@
                 if (this.comment_text == '') {
                     Toast('评论内容不能为空')
                 } else {
-                    let comment_id = 0, p_id = '', p_user_id = '', content = this.comment_text;
+                    let comment_id = '', p_id = '', p_user_id = '', content = this.comment_text;
+                    let v_id = this.videoList[this.current].id;
+                    console.log('check comment replay:', this.replayUserData);
                     if (this.replayUserData != '') {
-                        comment_id = this.replayUserData.comment_id;
+                        comment_id = this.replayUserData.id;
                         p_id = this.replayUserData.p_id;
-                        p_user_id = this.replayUserData.user_id;
+                        p_user_id = this.replayUserData.fromUserId;
+                    } else {
+                        p_user_id = this.videoList[this.current].userId;
                     }
-                    this.sendComment(comment_id, p_id, p_user_id, content)
+                    this.sendComment(comment_id, p_id, p_user_id, v_id, content)
                 }
             },
             //发送评论
-            sendComment(comment_id, p_id, p_user_id, content) {
+            sendComment(comment_id, p_id, p_user_id, v_id, content) {
                 this.comment_text = '';
                 this.isSending = true;
-                setTimeout(() => {
-                    let newData = {
-                        "comment_id": comment_id,
-                        "p_id": p_id,
-                        "comment_content": content,
-                        "love_count": 0,
-                        "create_time": "刚刚",
-                        "user_id": p_user_id,
-                        "nickname": "游客",//当前用户
-                        "avatar": 'https://profile.csdnimg.cn/B/1/E/3_ridingfish',//当前用户头像
-                        "be_commented_user_id": this.replayUserData.user_id,
-                        "be_commented_nickname": this.replayUserData.nickname,
+                let params = {
+                    videoId: v_id,
+                    comment: content,
+                    fromUserId: this.$store.state.userId,
+                };
+                this.$api.post(URL.SAVECOMMENTS + '?fatherCommentId=' + comment_id + '&toUserId=' + p_user_id, params).then(res => {
+                    console.log('save comment:', res);
+                    if (res.status === 200) {
+                        this.getComment();
                     }
-                    if (this.replayUserData == '') {
-                        //回复作品
-                        this.videoComment.splice(0, 0, newData)
-                    } else {
-                        let index = this.replayUserData.index;
-                        let index2 = this.replayUserData.index2;
-                        if (this.replayUserData.index2 == -1) {
-                            //回复一级人
-                            this.videoComment[index].child_comment.splice(0, 0, newData)
-                        } else {
-                            //回复二级人
-                            this.videoComment[index].child_comment.splice(index2, 0, newData)
-                        }
-                    }
-                    this.replayUserData = '';
-                    this.isSending = false;
-                }, 500)
+                }).catch(err => {
+                    Toast.fail(err.msg);
+                });
             },
             //评论点赞
             commentLove(item, index, index2) {
-                let comment_id = item.comment_id,
-                    user_id = item.user_id,
+                let comment_id = item.id,
+                    user_id = item.fromUserId,
                     love_comment = item.love_comment,
                     love_flag = 0;//0:取消点赞；1：点赞
                 if (love_comment) {
@@ -423,13 +420,6 @@
                             this.videoComment[index].love_count--
                         }
                     } else {
-                        //点赞二级评论
-                        this.videoComment[index].child_comment[index2].love_comment = !this.videoComment[index].child_comment[index2].love_comment
-                        if (love_flag == 1) {
-                            this.videoComment[index].child_comment[index2].love_count++
-                        } else {
-                            this.videoComment[index].child_comment[index2].love_count--
-                        }
                     }
                 }, 500)
             },
@@ -455,6 +445,17 @@
             },
             //关注该作者
             checkSubscribe(item, index) {
+                console.log('check subscribe:', item);
+                let fanId = this.$store.state.userId;
+                let userId = item.userId;
+                this.$api.post(URL.BEFANS + '?userId=' + userId + '&fanId=' + fanId, {}).then(res => {
+                    console.log('subscribe res:', res);
+                    if (res.status === 200) {
+                        this.tagFollow = true;
+                    }
+                }).catch(err => {
+                    Toast.fail(err.msg);
+                })
                 this.videoList.map(v => {
                     v.author_id == item.author_id ? v.tagFollow = true : '';
                 })
@@ -465,7 +466,32 @@
             },
             //改变收藏状态
             changeFabulous(item, index) {
-                this.videoList[index].fabulous = !this.videoList[index].fabulous
+                let params = {
+                    userId: this.$store.state.userId,
+                    videoId: item.id,
+                    videoCreaterId: item.userId,
+                };
+                let url = '';
+                if (this.likeVideo) {
+                  url = tools.getParams(URL.USERUNLIKE, params)
+                } else {
+                  url = tools.getParams(URL.USERLIKE, params)
+                }
+                this.$api.post(url, {}).then(res => {
+                    console.log('change fabulous:', res);
+                    if (res.status === 200) {
+                        if (this.likeVideo) {
+                            item.likeCounts--;
+                        } else {
+                            item.likeCounts++;
+                        }
+                        this.likeVideo = !this.likeVideo;
+                    } else {
+                        Toast.fail(res.msg);
+                    }
+                }).catch(err => {
+                    Toast.fail(err.msg);
+                });
             },
             //展示分享弹窗
             changeShare() {
@@ -474,6 +500,19 @@
             //取消分享
             cancelShare() {
                 this.showShareBox = false
+            },
+            queryUser () {
+                let userId = this.videoList[this.current].userId;
+                let nowUser = this.$store.state.userId;
+                this.tagFollow = false;
+                this.$api.post(URL.QUERYUSER + '?userId=' + userId + '&fanId=' + nowUser).then(res => {
+                    console.log('query user follow:', res);
+                    if (res.status === 200) {
+                        this.tagFollow = res.data.follow;
+                    }
+                }).catch(err => {
+                    Toast.fail(err.msg);
+                })
             },
             //滑动改变播放的视频
             onChange(index) {
@@ -488,7 +527,8 @@
                 this.showShareBox = false;
                 this.current = index;
                 //非ios切换直接自动播放下一个
-                if(!this.isiOS){
+                // if(!this.isiOS){
+                if(true){
                     this.isVideoShow = false;
                     setTimeout(() => {
                         this.pauseVideo()
@@ -497,6 +537,10 @@
                     //ios官方禁止video自动播放，未找到合适的方法，如果您发现了，麻烦告诉我一下谢谢啦
                     this.playOrPause = true;
                     this.iconPlayShow = true;
+                }
+                if (this.$store.state.userId) {
+                    this.queryUser();
+                    this.queryPublish();
                 }
                 if (Math.floor(((index + 1) / 5)) === (this.videoPage - 1)) {
                     this.videoPage++;
@@ -555,8 +599,12 @@
             //记录播放进度
             changeProcess() {
                 let video = document.querySelectorAll('video')[this.current];
-                let currentTime = video.currentTime.toFixed(1);
-                let duration = video.duration.toFixed(1);
+                let currentTime = 0;
+                let duration = 0;
+                if (video) {
+                  currentTime = video.currentTime.toFixed(1);
+                  duration = video.duration.toFixed(1);
+                }
                 this.videoProcess = parseInt((currentTime / duration).toFixed(2) * 100)
             },
             onPlayerEnded(player) { //视频结束
@@ -714,7 +762,7 @@
 
     .tag_dui_active {
         opacity: 0;
-        animation: showFollow 1.4s ease-in-out 0s;
+        /* animation: showFollow 1.4s ease-in-out 0s; */
     }
 
     .tag_add_num {

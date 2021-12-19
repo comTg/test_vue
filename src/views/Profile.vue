@@ -34,6 +34,7 @@
                 <van-tab title="作品" name="a">
                     <div class="img-container">
                         <van-image
+                         class="pro-img"
                          v-for="(item,index) in videoList" :key="index"
                          :src="item.coverPath"
                          height="10rem"
@@ -41,7 +42,7 @@
                     </div>
                 </van-tab>
                 <van-tab title="喜欢" name="b">
-                    内容2
+                    <div class="img-container"></div>
                 </van-tab>
             </van-tabs>
       </div>
@@ -175,7 +176,9 @@ export default {
                 this.$api.uploadFile(URL.UPLOADFACE, form).then(res => {
                     if (res.status === 200) {
                         Toast.success('上传成功');
-                        this.$store.state.faceImage = this.baseUrl + res.data;
+                        setTimeout(() => {
+                          this.$store.state.faceImage = this.baseUrl + res.data;
+                        }, 1000);
                         // this.updateUserInfo();
                     } else {
                         Toast.fail(res.msg);
@@ -221,7 +224,7 @@ export default {
         position:  relative;
         top: 80px;
         width: 100%;
-        min-height: 100vh;
+        /* min-height: 100vh; */
         box-shadow: 0 -2px 3px 0px rgb(64 60 67 / 16%);
         z-index: 4;
         background-color: #fff;
@@ -258,12 +261,22 @@ export default {
         font-weight: 700;
     }
     .img-container {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        /* flex-wrap: wrap; */
+        /* justify-content: left; */
+        /* padding: 5px 10px; */
         justify-content: space-around;
+        grid-template-columns: repeat(auto-fill, 100px);
+        grid-gap: 10px;
+        overflow-y: auto;
+        min-height: 200px;
     }
     .sheet-item {
         height: 51px;
         line-height: 51px;
+    }
+    .pro-img {
+        /* margin:5px 10px; */
+        margin-top: 5px;
     }
 </style>
